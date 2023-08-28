@@ -30,7 +30,7 @@ def encode(model : T5EncoderModel, s: Union[str, List[str]]) -> torch.Tensor:
     return features
 
 
-def main(sample_size=1_000, seed=69_420):
+def main(sample_size=10_000, seed=69_420):
   np.random.seed(seed)
   # TODO: figure the below out...
   repo = LeanGitRepo("https://github.com/Lev-Stambler/mathlib-clustering", "6069641a14213014f6e92fad3280e3a5f524497c")
