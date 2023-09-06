@@ -36,8 +36,7 @@ def cluster(embeddings: Embeddings, n_clusters: int, dimensions=2):
     return df, label, u_labels
 
 
-def relative_labels(thms1: List[str], thms2: List[str], centroid_idx1: int, centroid_idx2: int, api_key=None) -> str:
-    llm = OpenAI(model_name="gpt-4", openai_api_key=api_key)
+def relative_labels(thms1: List[str], thms2: List[str], centroid_idx1: int, centroid_idx2: int, llm) -> str:
     template = """Given the following two labeled sets of Lean theorems, can you describe the main difference in one sentence?
 
 Set {label1}: "{set1}"
@@ -47,4 +46,33 @@ Set {label2}: "{set2}"
     prompt = PromptTemplate(template=template, input_variables=["set1", "set2", "label1", "label2"])
     llm_chain = LLMChain(prompt=prompt, llm=llm)
     return llm_chain.run(set1="\n".join(thms1), set2="\n".join(thms2), label1=f"Cluster {centroid_idx1}", label2=f"Cluster {centroid_idx2}")
+    
+
+def local_neighbor_labels(thms_node: List[str], thms_local: List[List[str]], llm) -> str:
+    joined_non_prim = "\n".join(["\n".join(t) for t in thms_local])
+    joined_prim = "\n".join(thms_node)
+    prompt = f"""You will be given a set of non-primary theorems and a set of primary theorems. Can you briefly discuss the main focus of the primary theorems and how the primary theorems differ from the remaining theorems?
+
+Non-primary theorems: "{joined_non_prim}"
+
+Primary theorems: "{joined_prim}"
+
+RESPONSE:
+"""
+    return llm(prompt)
+    
+
+def local_neighbor_with_descr_labels(thms_node: List[str], descr_node: str, thms_local: List[List[str]], descr_thms_local: List[str], llm) -> str:
+    merged_non_prim = [f"Description: {descr_thms_local[i]}\n" + "\n".join(t) for i, t in range(thms_local)]
+    joined_non_prim = "\n\n".join(merged_non_prim)
+    joined_prim = f"Description: {descr_node}" + "\n" + "\n".join(thms_node)
+    prompt = f"""You will be given a set of non-primary theorems and a set of primary theorems. Can you briefly discuss the main focus of the primary theorems and how the primary theorems differ from the remaining theorems?
+
+Non-primary theorems: "{joined_non_prim}"
+
+Primary theorems: "{joined_prim}"
+
+RESPONSE:
+"""
+    return llm(prompt)
     
