@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from langchain import LLMChain, OpenAI, PromptTemplate
+from langchain import LLMBashChain, LLMChain, OpenAI, PromptTemplate
 import numpy as np
 from sklearn.datasets import load_digits
 from sklearn.decomposition import PCA
@@ -62,7 +62,7 @@ Set {label2}: "{set2}"
 #     return llm(prompt)
     
 
-def local_neighbor_with_descr_labels(thms_node: List[str], descr_node: str, thms_local: List[List[str]], descr_thms_local: List[str], llm) -> str:
+async def local_neighbor_with_descr_labels(thms_node: List[str], descr_node: str, thms_local: List[List[str]], descr_thms_local: List[str], llm: LLMBashChain):
     merged_non_prim = [f"Description: {descr_thms_local[i]}\n" + "\n".join(t) for i, t in enumerate(thms_local)] if descr_thms_local[0] != "" \
         else ["\n".join(t) for t in thms_local]
     joined_non_prim = "\n\n".join(merged_non_prim)
@@ -77,5 +77,6 @@ Primary theorems: "{joined_prim}"
 
 RESPONSE:
 """
-    return llm(prompt)
+    r = await llm.agenerate([prompt])
+    return r.generations[0][0].text
     
