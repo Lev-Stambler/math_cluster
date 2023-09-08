@@ -305,4 +305,4 @@ if __name__ == "__main__":
 		loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
 	if True:
 		new_n_rounds = 5
-		loop.run_until_complete(run_from_file(embeddings, get_data_file_name(params), llm), n_rounds=new_n_rounds)
+		loop.run_until_complete(run_from_file(embeddings, get_data_file_name(params), llm, n_rounds=new_n_rounds))
