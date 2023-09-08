@@ -1,0 +1,3 @@
+[submodule "py/exllama"]
+	path = py/exllama
+	url = https://github.com/turboderp/exllama.git
