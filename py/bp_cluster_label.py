@@ -183,7 +183,8 @@ class RunData:
             "parity_check_matrix": np.array(self.parity_check_matrix).tolist(),
             "params": self.params.to_dict(),
             "completed_rounds": self.completed_rounds,
-            "cluster_labels": np.array(self.cluster_labels).tolist()
+            "cluster_labels": np.array(self.cluster_labels).tolist(),
+            "shortened": self.shortened
         }
 
     def from_dict(d: dict):
