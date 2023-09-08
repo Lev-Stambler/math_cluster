@@ -301,7 +301,7 @@ def run_hard_decision_function(llm: LLM, data: RunData, bp_round=-1):
   DIFFERENCES: "{joined}"
 
   SHORTENED PRIMARY FOCUS:"""
-        return llm(prompt)
+        return llm(prompt, stop=STOP_DEFAULT_TOKENS)
 
     def shorten_all():
         if data.shortened is None:
