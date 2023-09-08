@@ -280,5 +280,5 @@ if __name__ == "__main__":
 	if USE_FAKE:
 		llm = fake.FakeListLLM(responses=["hello " * 30] * 1_000)
 	else:
-		llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ", max_response_tokens=1_000)
+		llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ", max_response_tokens=1_000, max_seq_len=4_096)
 	loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
