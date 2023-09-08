@@ -234,7 +234,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 
 	for round_numb in range(data.completed_rounds, params.n_rounds):
 		print(f"Starting BP Round {round_numb + 1} out of {params.n_rounds}")
-		SKIP = 4
+		SKIP = 1
 		tmp = []
 		for i in range(0, params.n_clusters, SKIP):
 			tasks = []
