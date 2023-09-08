@@ -116,6 +116,7 @@ async def local_neighbor_with_descr_labels(thms_node: List[str], descr_node: str
     joined_prim = (f"Description: {descr_node}" +
                    "\n" if descr_node != "" else "") + "\n".join(thms_node)
     # TODO: Fix up so that we can use any format of promtp
+    # TODO: hmmmm instruction???
     prompt = f"""### Instruction:
 
 You will be given a set of non-primary theorems and a set of primary theorems{ " as well as descriptions for both" if descr_node[0] != "" else ""}. Can you briefly discuss the main focus of the primary theorems and how it differs from the remaining theorems?
