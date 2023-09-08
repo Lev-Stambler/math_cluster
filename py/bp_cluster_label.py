@@ -1,5 +1,6 @@
 import os, sys
 sys.path.append(os.getcwd())
+sys.path.append(os.path.join(os.getcwd(), "exllama"))
 
 import json
 import cluster
