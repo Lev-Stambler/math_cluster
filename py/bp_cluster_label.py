@@ -169,7 +169,7 @@ def get_data_file_name(params: RunParams):
 def save_dict(params: RunParams, d: RunData):
 	json.dump(d.to_dict(), open(get_data_file_name(params), "w"))
 
-async def llm_bp(embeddings: custom_types.Embeddings, llm: langchain.LLM, data: RunData):
+async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 	"""
 		Run bp-ish.... TODO: document
 
@@ -268,5 +268,5 @@ if __name__ == "__main__":
 	file_path = f"data_store/embeddings_seed_69420_size_10000.json"
 	embeddings: List[Tuple[str, List[float]]] = json.load(open(file_path, "r"))
 	# thm_embs = 
-	llm = exllama_lang.ExLLamaLLM(model_dir="../Luban-13B-GPTQ")
+	llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ")
 	loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
