@@ -344,7 +344,7 @@ if __name__ == "__main__":
     llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ", max_response_tokens=1_000, max_seq_len=4_096, temperature=0.3, beams=3, beam_length=10)
   if False:
     loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
-  elif False:
+  elif True:
     new_n_rounds = 5
     loop.run_until_complete(run_from_file(embeddings, get_data_file_name(params), llm, n_rounds=new_n_rounds))
   elif True:
