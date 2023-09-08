@@ -157,9 +157,9 @@ class RunData:
 	completed_rounds = 0
 	cluster_labels: npt.NDArray
 
-	def __init__(self, cluster_labels: npt.NDArray, H: npt.NDArray, params: RunParams) -> None:
+	def __init__(self, cluster_labels: npt.NDArray, parity_check_matrix: npt.NDArray, params: RunParams) -> None:
 		self.cluster_labels = cluster_labels
-		self.parity_check_matrix = H
+		self.parity_check_matrix = parity_check_matrix
 		self.params = params
 
 	def to_dict(self):
@@ -272,7 +272,7 @@ async def run_bp_labeling(n_clusters: int, params: RunParams, thm_embs: custom_t
 	assert n_clusters % 2 == 0, "Must have an even number of clusters"
 	_, labels, _unique_label_set = cluster.cluster(thm_embs, n_clusters) # Cluster with the number of dimensions equal to the number of embeddings
 	H = parity_check_matrix(int(n_clusters / 2), params.cluster_cluster_deg, params.cluster_cluster_deg)
-	data = RunData(cluster_labels=labels, H=H, params=params)
+	data = RunData(cluster_labels=labels, parity_check_matrix=H, params=params)
 	await llm_bp(thm_embs, llm, data)
 
 async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: LLM, n_rounds = None):
