@@ -1,7 +1,7 @@
 import os, sys
 sys.path.append(os.getcwd())
 
-USE_FAKE = True
+USE_FAKE = False
 if not USE_FAKE:
 	sys.path.append(os.path.join(os.getcwd(), "exllama"))
 	import exllama_lang
