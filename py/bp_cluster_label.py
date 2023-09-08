@@ -119,7 +119,7 @@ Non-primary theorems: "{joined_non_prim}"
 
 Primary theorems: "{joined_prim}"
 
-### Response:
+SHORT RESPONSE:### Response:
 """
     r = await llm.agenerate([prompt], stop=STOP_DEFAULT_TOKENS)
     return r.generations[0][0].text
@@ -290,7 +290,7 @@ async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: 
 	data = RunData.from_dict(_data)
 	# params = RunParams(**_data["params"])
 	if n_rounds is not None:
-		print("SETTING ROUNDS")
+		print("SETTING ROUNDS");
 		data.params.n_rounds = n_rounds
 
 	await llm_bp(thm_embs, llm, data)
