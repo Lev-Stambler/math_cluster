@@ -135,12 +135,12 @@ class RunParams:
 	descr: str
 	cluster_cluster_deg: int
 
-	def __init__(self, n_clusters: int, seed: int, n_rounds: int, model_name: str, max_group_size: int, cluster_cluster_deg=3, descr: str="default"):
+	def __init__(self, n_clusters: int, seed: int, n_rounds: int, model_name: str, max_sample_size: int, cluster_cluster_deg=3, descr: str="default"):
 		self.n_clusters = n_clusters
 		self.seed = seed
 		self.n_rounds = n_rounds
 		self.model_name = model_name
-		self.max_sample_size = max_group_size
+		self.max_sample_size = max_sample_size
 		self.descr = descr
 		self.cluster_cluster_deg = cluster_cluster_deg
 	
