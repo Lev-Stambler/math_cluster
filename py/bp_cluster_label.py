@@ -247,7 +247,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 				print("Appended cluster", i + skip)
 			rets = await asyncio.gather(*tasks)
 			rets_str = "\n\n".join(["\n".join(list(filter(lambda x: x != "", r[1]))) for r in rets])
-			print(f"Returns for BP round {round_numb + 1} out of {params.n_rounds} and cluster {i} to {i + SKIP - 1} (inclusive): {rets_str}")
+			print(f"\nReturns for BP round {round_numb + 1} out of {params.n_rounds} and cluster {i} to {i + SKIP - 1} (inclusive): {rets_str}\n")
 			tmp = tmp + (rets)
 
 			
@@ -265,15 +265,27 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 	return data
 
 
-async def run_bp_labeling(n_clusters: int, thm_embs: custom_types.Embeddings, llm: LLM, bp_rounds = 2):
+async def run_bp_labeling(n_clusters: int, params: RunParams, thm_embs: custom_types.Embeddings, llm: LLM):
 	"""
 		Runs BP on the given theorems, returning the labels for each theorem
 	"""
 	assert n_clusters % 2 == 0, "Must have an even number of clusters"
-	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=bp_rounds, model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_group_size=20, cluster_cluster_deg=3)
 	_, labels, _unique_label_set = cluster.cluster(thm_embs, n_clusters) # Cluster with the number of dimensions equal to the number of embeddings
 	H = parity_check_matrix(int(n_clusters / 2), params.cluster_cluster_deg, params.cluster_cluster_deg)
 	data = RunData(cluster_labels=labels, H=H, params=params)
+	await llm_bp(thm_embs, llm, data)
+
+async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: LLM, n_rounds = None):
+	"""
+		Runs BP on the given theorems, returning the labels for each theorem
+	"""
+	data = json.load(open(file_path, "r"))
+	params = RunParams(**data["params"])
+	if n_rounds is not None:
+		params.n_rounds = n_rounds
+	data["params"] = params
+	data["cluster_labels"] = np.array(data["cluster_labels"])
+	data["parity_check_matrix"] = np.array(data["parity_check_matrix"])
 	await llm_bp(thm_embs, llm, data)
 
 if __name__ == "__main__":
@@ -282,8 +294,15 @@ if __name__ == "__main__":
 	file_path = f"data_store/embeddings_seed_69420_size_10000.json"
 	embeddings: List[Tuple[str, List[float]]] = json.load(open(file_path, "r"))
 	# thm_embs = 
+	n_clusters = 24
+	bp_rounds = 2
+	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=bp_rounds, model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_group_size=20, cluster_cluster_deg=3)
 	if USE_FAKE:
 		llm = fake.FakeListLLM(responses=["hello " * 30] * 1_000)
 	else:
 		llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ", max_response_tokens=1_000, max_seq_len=4_096, temperature=0.1, beams=3, beam_length=10)
-	loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
+	if False:
+		loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
+	if True:
+		new_n_rounds = 5
+		loop.run_until_complete(run_from_file(embeddings, get_data_file_name(params), llm), n_rounds=new_n_rounds)
