@@ -30,6 +30,8 @@ from pprint import pprint as pp
 START = "\033[1;94m"
 STOP = "\033[;97m"
 
+STOP_DEFAULT = ["### Instruction"]
+
 # TODO: Make this whole thing better...
 # PATH_TEMPLATE = "/home/john/Projects/Python/text-models/text-generation-webui/models/{model_name}/"
 
@@ -84,9 +86,10 @@ class ExLLamaLLM(LLM):
     def _call(
         self,
         prompt: str,
-        stop: None,
-        run_manager: None,
+        stop=STOP_DEFAULT, # TODO: make modular
+        run_manager: None = None,
     ) -> str:
+		print("AAAAAAAAAAAAAAAAAA", stop)
         if self.stream_output:
             #clear_screen()
             print(prompt + START, end=" ")

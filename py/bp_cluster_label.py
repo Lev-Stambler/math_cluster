@@ -245,7 +245,8 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 					tasks.append(pc_to_bit(i + skip))
 				print("Appended cluster", i + skip)
 			rets = await asyncio.gather(*tasks)
-			print(f"Returns for BP round {round_numb + 1} out of {params.n_rounds} and cluster {i} to {i + SKIP - 1} (inclusive): {rets}")
+			rets_str = "\n\n".join(filter(lambda x: x != "", rets))
+			print(f"Returns for BP round {round_numb + 1} out of {params.n_rounds} and cluster {i} to {i + SKIP - 1} (inclusive): {rets_str}")
 			tmp = tmp + (rets)
 
 			
