@@ -296,7 +296,7 @@ if __name__ == "__main__":
 	# thm_embs = 
 	n_clusters = 24
 	bp_rounds = 2
-	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=bp_rounds, model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_group_size=20, cluster_cluster_deg=3)
+	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=bp_rounds, model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_sample_size=20, cluster_cluster_deg=3)
 	if USE_FAKE:
 		llm = fake.FakeListLLM(responses=["hello " * 30] * 1_000)
 	else:
