@@ -230,7 +230,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 
 	for round_numb in range(data.completed_rounds, params.n_rounds):
 		print(f"Starting BP Round {round_numb + 1} out of {params.n_rounds}")
-		SKIP = 2
+		SKIP = 1
 		tmp = []
 		for i in range(0, params.n_clusters, SKIP):
 			tasks = []
@@ -241,7 +241,10 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 				else:
 					tasks.append(pc_to_bit(i + skip))
 				print("Appended cluster", i + skip)
-			tmp = tmp + (await asyncio.gather(*tasks))
+			rets = await asyncio.gather(*tasks)
+			print(f"Returns for BP round {round_numb + 1} out of {params.n_rounds} and cluster {i} to {i + SKIP - 1} (inclusive): {rets}")
+			tmp = tmp + (rets)
+
 			
 
 		tmp.sort(key=lambda x: x[0])
