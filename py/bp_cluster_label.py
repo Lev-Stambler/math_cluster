@@ -118,7 +118,7 @@ Non-primary theorems: "{joined_non_prim}"
 
 Primary theorems: "{joined_prim}"
 
-### Response:
+SHORT RESPONSE:### Response:
 """
     r = await llm.agenerate([prompt])
     return r.generations[0][0].text
