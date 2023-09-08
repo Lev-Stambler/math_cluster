@@ -290,7 +290,8 @@ async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: 
 	data = RunData.from_dict(_data)
 	# params = RunParams(**_data["params"])
 	if n_rounds is not None:
-		params.n_rounds = n_rounds
+		print("SETTING ROUNDS")
+		data.params.n_rounds = n_rounds
 
 	await llm_bp(thm_embs, llm, data)
 
