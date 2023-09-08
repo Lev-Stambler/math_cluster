@@ -286,6 +286,7 @@ async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: 
 	data["params"] = params
 	data["cluster_labels"] = np.array(data["cluster_labels"])
 	data["parity_check_matrix"] = np.array(data["parity_check_matrix"])
+	data = RunData(**data)
 	await llm_bp(thm_embs, llm, data)
 
 if __name__ == "__main__":
