@@ -260,12 +260,12 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 	return data
 
 
-async def run_bp_labeling(n_clusters: int, thm_embs: custom_types.Embeddings, llm: LLM):
+async def run_bp_labeling(n_clusters: int, thm_embs: custom_types.Embeddings, llm: LLM, bp_rounds = 2):
 	"""
 		Runs BP on the given theorems, returning the labels for each theorem
 	"""
 	assert n_clusters % 2 == 0, "Must have an even number of clusters"
-	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=1, model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_group_size=20, cluster_cluster_deg=3)
+	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=bp_rounds, model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_group_size=20, cluster_cluster_deg=3)
 	_, labels, _unique_label_set = cluster.cluster(thm_embs, n_clusters) # Cluster with the number of dimensions equal to the number of embeddings
 	H = parity_check_matrix(int(n_clusters / 2), params.cluster_cluster_deg, params.cluster_cluster_deg)
 	data = RunData(cluster_labels=labels, H=H, params=params)
@@ -280,5 +280,5 @@ if __name__ == "__main__":
 	if USE_FAKE:
 		llm = fake.FakeListLLM(responses=["hello " * 30] * 1_000)
 	else:
-		llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ")
+		llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ", max_response_tokens=1_000)
 	loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
