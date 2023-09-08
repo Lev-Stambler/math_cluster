@@ -291,12 +291,6 @@ async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: 
 	# params = RunParams(**_data["params"])
 	if n_rounds is not None:
 		params.n_rounds = n_rounds
-	# data = {}
-	# data["params"] = params
-	# data["cluster_labels"] = np.array(_data["cluster_labels"])
-	# data["parity_check_matrix"] = np.array(_data["parity_check_matrix"])
-	# data = RunData(**data)
-	# data.completed_rounds = _data["completed_rounds"]
 
 	await llm_bp(thm_embs, llm, data)
 
