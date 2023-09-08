@@ -1,12 +1,16 @@
 import os, sys
 sys.path.append(os.getcwd())
-sys.path.append(os.path.join(os.getcwd(), "exllama"))
+
+USE_FAKE = False
+if not USE_FAKE:
+	sys.path.append(os.path.join(os.getcwd(), "exllama"))
+	import exllama_lang
 
 import json
 import cluster
 from langchain.llms.base import LLM
+from langchain.llms import fake
 from typing import List, Tuple
-import exllama_lang
 import numbers
 import numpy as np
 import asyncio
@@ -149,7 +153,7 @@ class RunData:
 	completed_rounds = 0
 	cluster_labels: npt.NDArray
 
-	def __init__(cluster_labels: npt.NDArray, H: npt.NDArray, params: RunParams, self) -> None:
+	def __init__(self, cluster_labels: npt.NDArray, H: npt.NDArray, params: RunParams) -> None:
 		self.cluster_labels = cluster_labels
 		self.parity_check_matrix = H
 		self.params = params
@@ -182,7 +186,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 	params = data.params
 
 	# For simplicity, we will use an adjacency matrix for now. Later we can flatten this data-structure to make it cheaper
-	if "rounds" in data and len(data.rounds) > 0:
+	if data.rounds is not None and len(data.rounds) > 0:
 		primary_focuses_msgs_last = data.rounds[-1]
 	else:
 		data.rounds = []
@@ -192,7 +196,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 		assert i >= params.n_clusters / 2, "Must be a parity check bit"
 		# H_ind = np.where(check_inds == i)[0][0]
 		pc_ind = i - int(params.n_clusters / 2)
-		neighbors = np.where(H_cluster[pc_ind, :] == 1)
+		neighbors = np.where(H_cluster[pc_ind, :] == 1)[0]
 		# cluster_neighbor_inds = bit_inds[neighbors]
 		p = ["" for _ in range(params.n_clusters)]
 
@@ -210,14 +214,16 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 	async def bit_to_pc(i):
 		assert i < params.n_clusters / 2, "Must be a data bit"
 		# We offset by n_clusters / 2 because we want to start at the parity check bits
-		neighbors = int(params.n_clusters / 2) + np.where(H_cluster[:, i] == 1)
+		offset = int(params.n_clusters / 2) 
+		neighbors = offset + np.where(H_cluster[:, i] == 1)[0]
+		# print("Neighbors", neighbors, H_cluster.shape)
 		p = ["" for _ in range(params.n_clusters)]
 
 		for neighbor_ind in range(params.cluster_cluster_deg):
 			neighbors_without_neighbor = np.delete(neighbors, neighbor_ind)
 			
-			ret = await local_neighbor_with_descr_labels(get_theorems_in_group(i, max_size=params.max_sample_size), primary_focuses_msgs_last[i],
-																[get_theorems_in_group(j, max_size=params.max_sample_size)
+			ret = await local_neighbor_with_descr_labels(get_theorems_in_group(embeddings, data.cluster_labels, i, max_size=params.max_sample_size), primary_focuses_msgs_last[i],
+																[get_theorems_in_group(embeddings, data.cluster_labels, j, max_size=params.max_sample_size)
 																for j in neighbors_without_neighbor], [primary_focuses_msgs_last[j][i] for j in neighbors_without_neighbor], llm=llm)
 			p[neighbors[neighbor_ind]] = ret
 		return (i, p)
@@ -256,9 +262,9 @@ async def run_bp_labeling(n_clusters: int, thm_embs: custom_types.Embeddings, ll
 		Runs BP on the given theorems, returning the labels for each theorem
 	"""
 	assert n_clusters % 2 == 0, "Must have an even number of clusters"
-	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=1, model_name="exlamma-luban-13b-4bit", max_group_size=20, cluster_cluster_deg=3)
+	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=1, model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_group_size=20, cluster_cluster_deg=3)
 	_, labels, _unique_label_set = cluster.cluster(thm_embs, n_clusters) # Cluster with the number of dimensions equal to the number of embeddings
-	H = parity_check_matrix(n_clusters, params.cluster_cluster_deg, params.cluster_cluster_deg)
+	H = parity_check_matrix(int(n_clusters / 2), params.cluster_cluster_deg, params.cluster_cluster_deg)
 	data = RunData(cluster_labels=labels, H=H, params=params)
 	await llm_bp(thm_embs, llm, data)
 
@@ -268,5 +274,8 @@ if __name__ == "__main__":
 	file_path = f"data_store/embeddings_seed_69420_size_10000.json"
 	embeddings: List[Tuple[str, List[float]]] = json.load(open(file_path, "r"))
 	# thm_embs = 
-	llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ")
+	if USE_FAKE:
+		llm = fake.FakeListLLM(responses=["hello " * 30] * 1_000)
+	else:
+		llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ")
 	loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
