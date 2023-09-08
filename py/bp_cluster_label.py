@@ -308,7 +308,8 @@ def run_hard_decision_function(llm: LLM, data: RunData, bp_round=-1):
     def shorten_all():
         if data.shortened is None:
             data.shortened = []
-        ind = -1
+        # ind = -1
+        ind = bp_round
         data.shortened.append([])
         data.shortened[-1] = ["BP Round " +
                               str((len(data.rounds) + ind) % len(data.rounds)), []]
