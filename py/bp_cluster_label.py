@@ -290,7 +290,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
     return data
 
 
-async def run_hard_decision_function(llm: LLM, data: RunData, bp_round=-1):
+def run_hard_decision_function(llm: LLM, data: RunData, bp_round=-1):
     def shorten(cluster_idx: int, ind: int):
         # ind = 0
         # print(d_out["rounds"])
@@ -312,6 +312,7 @@ async def run_hard_decision_function(llm: LLM, data: RunData, bp_round=-1):
                               str((len(data.rounds) + ind) % len(data.rounds)), []]
         for i in range(data.params.n_clusters):
             data.shortened[-1][1].append(shorten(i, bp_round))
+            print("Shortened", i, data.shortened[-1][1][-1])
         save_dict(data.params, data)
 
     shorten_all()
@@ -370,5 +371,4 @@ if __name__ == "__main__":
         _data = json.load(open(get_data_file_name(params), "r"))
         data = RunData.from_dict(_data)
         for i in range(5):
-            loop.run_until_complete(
-                run_hard_decision_function(llm, data, bp_round=i))
+          run_hard_decision_function(llm, data, bp_round=i)
