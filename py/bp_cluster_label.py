@@ -19,6 +19,7 @@ import langchain
 import numpy.typing as npt
 import custom_types
 
+STOP_DEFAULT_TOKENS = ["### Instruction", "\n"]
 
 def get_theorems_in_group(embeddings: custom_types.Embeddings, labels: npt.NDArray, group_idx: int, max_size=None, random=True):
 	s = [embeddings[i][0] for i in np.where(labels == group_idx)[0]]
@@ -120,7 +121,7 @@ Primary theorems: "{joined_prim}"
 
 SHORT RESPONSE:### Response:
 """
-    r = await llm.agenerate([prompt])
+    r = await llm.agenerate([prompt], stop=STOP_DEFAULT)
     return r.generations[0][0].text
    
 
