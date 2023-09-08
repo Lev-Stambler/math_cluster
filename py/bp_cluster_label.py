@@ -108,14 +108,17 @@ async def local_neighbor_with_descr_labels(thms_node: List[str], descr_node: str
     joined_non_prim = "\n\n".join(merged_non_prim)
 
     joined_prim = (f"Description: {descr_node}" + "\n" if descr_node != "" else "") + "\n".join(thms_node)
-    prompt = f"""You will be given a set of non-primary theorems and a set of primary theorems{ " as well as descriptions for both" if descr_node[0] != "" else ""}. Can you briefly discuss the main focus of the primary theorems and how it differs from the remaining theorems?
+		# TODO: Fix up so that we can use any format of promtp
+    prompt = f"""### Instruction:
+
+You will be given a set of non-primary theorems and a set of primary theorems{ " as well as descriptions for both" if descr_node[0] != "" else ""}. Can you briefly discuss the main focus of the primary theorems and how it differs from the remaining theorems?
 Assume that when the descriptions are given for the non-primary theorems, that they do not reference the set of primary theorems at all.
 
 Non-primary theorems: "{joined_non_prim}"
 
 Primary theorems: "{joined_prim}"
 
-RESPONSE:
+### Response:
 """
     r = await llm.agenerate([prompt])
     return r.generations[0][0].text
