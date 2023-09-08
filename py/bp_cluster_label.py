@@ -165,14 +165,14 @@ class RunData:
 	def to_dict(self):
 		return {
 			"rounds": self.rounds,
-			"parity_check_matrix": self.parity_check_matrix.tolist(),
+			"parity_check_matrix": np.array(self.parity_check_matrix).tolist(),
 			"params": self.params.to_dict(),
 			"completed_rounds": self.completed_rounds,
-			"cluster_labels": self.cluster_labels.tolist()
+			"cluster_labels": np.array(self.cluster_labels).tolist()
 		}
 	
 	def from_dict(d: dict):
-		r = RunData(d["cluster_labels"], np.array(d["parity_check_matrix"]), RunParams(**d["params"]))
+		r = RunData(np.array(d["cluster_labels"]), np.array(d["parity_check_matrix"]), RunParams(**d["params"]))
 		r.rounds = d["rounds"]
 		r.completed_rounds = d["completed_rounds"]
 		return r
