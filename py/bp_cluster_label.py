@@ -1,7 +1,7 @@
 import os, sys
 sys.path.append(os.getcwd())
 
-USE_FAKE = False
+USE_FAKE = True
 if not USE_FAKE:
 	sys.path.append(os.path.join(os.getcwd(), "exllama"))
 	import exllama_lang
@@ -234,7 +234,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 
 	for round_numb in range(data.completed_rounds, params.n_rounds):
 		print(f"Starting BP Round {round_numb + 1} out of {params.n_rounds}")
-		SKIP = 1
+		SKIP = 4
 		tmp = []
 		for i in range(0, params.n_clusters, SKIP):
 			tasks = []
@@ -246,7 +246,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 					tasks.append(pc_to_bit(i + skip))
 				print("Appended cluster", i + skip)
 			rets = await asyncio.gather(*tasks)
-			rets_str = "\n\n".join(["\n".join(list(filter(lambda x: x != "", r))) for r in rets])
+			rets_str = "\n\n".join(["\n".join(list(filter(lambda x: x != "", r[1]))) for r in rets])
 			print(f"Returns for BP round {round_numb + 1} out of {params.n_rounds} and cluster {i} to {i + SKIP - 1} (inclusive): {rets_str}")
 			tmp = tmp + (rets)
 
