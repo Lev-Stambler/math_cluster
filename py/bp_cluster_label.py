@@ -12,7 +12,6 @@ import numpy.typing as npt
 import custom_types
 
 
-# TODO: fix
 def get_theorems_in_group(embeddings: custom_types.Embeddings, labels: npt.NDArray, group_idx: int, max_size=None, random=True):
 	s = [embeddings[i][0] for i in np.where(labels == group_idx)[0]]
 	if max_size is None or len(s) <= max_size: 
@@ -166,7 +165,7 @@ def get_data_file_name(params: RunParams):
 def save_dict(params: RunParams, d: RunData):
 	json.dump(d.to_dict(), open(get_data_file_name(params), "w"))
 
-async def llm_bp(llm: langchain.LLM, data: RunData):
+async def llm_bp(embeddings: custom_types.Embeddings, llm: langchain.LLM, data: RunData):
 	"""
 		Run bp-ish.... TODO: document
 
@@ -196,15 +195,14 @@ async def llm_bp(llm: langchain.LLM, data: RunData):
 		for neighbor_ind in range(params.cluster_cluster_deg):
 			neighbors_without_neighbor = np.delete(neighbors, neighbor_ind)
 			
-			ret = await local_neighbor_with_descr_labels(get_theorems_in_group(i, max_size=params.max_sample_size), primary_focuses_msgs_last[i],
-																[get_theorems_in_group(j, max_size=params.max_sample_size)
+			ret = await local_neighbor_with_descr_labels(get_theorems_in_group(embeddings, data.cluster_labels, i, max_size=params.max_sample_size), primary_focuses_msgs_last[i],
+																[get_theorems_in_group(embeddings, data.cluster_labels, j, max_size=params.max_sample_size)
 																for j in neighbors_without_neighbor], [primary_focuses_msgs_last[j][i] for j in neighbors_without_neighbor], llm=llm)
 			
 			# primary_focuses_msgs[i][cluster_neighbor_inds[neighbor_ind]] = ret
 			p[neighbors[neighbor_ind]] = ret
 		return (i, p)
 	
-	# TODO: enforce n_clusters mod 2 == 0
 	async def bit_to_pc(i):
 		assert i < params.n_clusters / 2, "Must be a data bit"
 		# We offset by n_clusters / 2 because we want to start at the parity check bits
@@ -253,11 +251,12 @@ async def run_bp_labeling(n_clusters: int, thm_embs: custom_types.Embeddings, ll
 	"""
 		Runs BP on the given theorems, returning the labels for each theorem
 	"""
+	assert n_clusters % 2 == 0, "Must have an even number of clusters"
 	params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=1, model_name="exlamma-luban-13b-4bit", max_group_size=20, cluster_cluster_deg=3)
 	_, labels, _unique_label_set = cluster.cluster(thm_embs, n_clusters) # Cluster with the number of dimensions equal to the number of embeddings
 	H = parity_check_matrix(n_clusters, params.cluster_cluster_deg, params.cluster_cluster_deg)
 	data = RunData(cluster_labels=labels, H=H, params=params)
-	await llm_bp(llm, data)
+	await llm_bp(thm_embs, llm, data)
 
 if __name__ == "__main__":
 	# await run_bp_labeling(16, thm_embs, llm)
@@ -267,8 +266,3 @@ if __name__ == "__main__":
 	# thm_embs = 
 	llm = exllama_lang.ExLLamaLLM(model_dir="../Luban-13B-GPTQ")
 	loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
-
-
-	# parity_check_inds = np.random.choice(np.arange(n_clusters), size=int(n_clusters / 2), replace=False)
-	# bit_inds = np.array(list(filter(lambda x: x not in parity_check_inds, np.arange(n_clusters))))
-	# np.random.shuffle(bit_inds)
