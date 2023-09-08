@@ -170,6 +170,13 @@ class RunData:
 			"completed_rounds": self.completed_rounds,
 			"cluster_labels": self.cluster_labels.tolist()
 		}
+	
+	def from_dict(d: dict):
+		r = RunData(d["cluster_labels"], np.array(d["parity_check_matrix"]), RunParams(**d["params"]))
+		r.rounds = d["rounds"]
+		r.completed_rounds = d["completed_rounds"]
+		return r
+
 
 def get_data_file_name(params: RunParams):
 	return f"data_store/llm_bp_clustersize_{params.n_clusters}__seed_{params.seed}_{params.model_name}__descr_{params.descr}.json"
@@ -279,14 +286,18 @@ async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: 
 	"""
 		Runs BP on the given theorems, returning the labels for each theorem
 	"""
-	data = json.load(open(file_path, "r"))
-	params = RunParams(**data["params"])
+	_data = json.load(open(file_path, "r"))
+	data = RunData.from_dict(_data)
+	# params = RunParams(**_data["params"])
 	if n_rounds is not None:
 		params.n_rounds = n_rounds
-	data["params"] = params
-	data["cluster_labels"] = np.array(data["cluster_labels"])
-	data["parity_check_matrix"] = np.array(data["parity_check_matrix"])
-	data = RunData(**data)
+	# data = {}
+	# data["params"] = params
+	# data["cluster_labels"] = np.array(_data["cluster_labels"])
+	# data["parity_check_matrix"] = np.array(_data["parity_check_matrix"])
+	# data = RunData(**data)
+	# data.completed_rounds = _data["completed_rounds"]
+
 	await llm_bp(thm_embs, llm, data)
 
 if __name__ == "__main__":
