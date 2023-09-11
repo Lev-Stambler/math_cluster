@@ -6,21 +6,16 @@ import asyncio
 import numpy as np
 import numbers
 from typing import List, Tuple
-from langchain.llms import fake
 from langchain.llms.base import LLM
 import cluster
 import json
 import os
 import sys
 sys.path.append(os.getcwd())
+from model_wrapper import llm, llm_name
 
-USE_FAKE = False
-if not USE_FAKE:
-    sys.path.append(os.path.join(os.getcwd(), "exllama"))
-    import exllama_lang
-
-
-STOP_DEFAULT_TOKENS = ["### Instruction", "\n"]
+# STOP_DEFAULT_TOKENS = ["### Instruction", "\n"]
+STOP_DEFAULT_TOKENS = []
 
 
 def get_theorems_in_group(embeddings: custom_types.Embeddings, labels: npt.NDArray, group_idx: int, max_size=None, random=True):
@@ -109,7 +104,9 @@ parity_check_matrix(16, 4, 4)
 
 
 async def local_neighbor_with_descr_labels(thms_node: List[str], descr_node: str, thms_local: List[List[str]], descr_thms_local: List[str], llm: LLM):
-    merged_non_prim = [f"Description: {descr_thms_local[i]}\n" + "\n".join(t) for i, t in enumerate(thms_local)] if descr_thms_local[0] != "" \
+    description_exists = len(descr_node) != 0
+
+    merged_non_prim = [f"Description: {descr_thms_local[i]}\n" + "\n".join(t) + "\n" for i, t in enumerate(thms_local)] if description_exists \
         else ["\n".join(t) for t in thms_local]
     joined_non_prim = "\n\n".join(merged_non_prim)
 
@@ -117,25 +114,35 @@ async def local_neighbor_with_descr_labels(thms_node: List[str], descr_node: str
                    "\n" if descr_node != "" else "") + "\n".join(thms_node)
     # TODO: Fix up so that we can use any format of promtp
     # TODO: hmmmm instruction???
-    prompt = f"""### Instruction:
+    if not description_exists:
+        prompt = f"""You will be given a set of primary theorems and a set of non primary theorems. Can you give a brief textual and qualitative description of the unifying theme behind the primary theorems?
 
-You will be given a set of non-primary theorems and a set of primary theorems{ " as well as descriptions for both" if descr_node[0] != "" else ""}. Can you briefly discuss the main focus of the primary theorems and how it differs from the remaining theorems?
-Assume that when the descriptions are given for the non-primary theorems, that they do not reference the set of primary theorems at all.
+NON-PRIMARY THEOREMS: "{joined_non_prim}"
+
+PRIMARY THEOREMS: "{joined_prim}"
+
+SHORT RESPONSE:
+"""
+    else:
+        prompt = f"""You will be given a set of primary theorems and a set of non primary theorems as well as their current description. Can you give a brief and updated textual and qualitative description of the unifying theme behind the primary theorems?
 
 Non-primary theorems: "{joined_non_prim}"
 
 Primary theorems: "{joined_prim}"
 
-SHORT RESPONSE:### Response:
-"""
+SHORT RESPONSE:
+""" 
+    # print("Prompt", prompt)
     try:
-        r = await llm.agenerate([prompt], stop=STOP_DEFAULT_TOKENS)
+        r = await llm.agenerate([prompt])
+        # r = await llm.agenerate([prompt], stop=STOP_DEFAULT_TOKENS)
     except:
         print("ERROR GENERATING for prompt", prompt)
         print("RETURNING ORIGINAL DESCR")
         return descr_node
     finally:
         pass
+    print("Generated", r)
     return r.generations[0][0].text
 
 
@@ -234,7 +241,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
         for neighbor_ind in range(params.cluster_cluster_deg):
             neighbors_without_neighbor = np.delete(neighbors, neighbor_ind)
 
-            ret = await local_neighbor_with_descr_labels(get_theorems_in_group(embeddings, data.cluster_labels, i, max_size=params.max_sample_size), primary_focuses_msgs_last[i],
+            ret = await local_neighbor_with_descr_labels(get_theorems_in_group(embeddings, data.cluster_labels, i, max_size=params.max_sample_size), primary_focuses_msgs_last[i][neighbor_ind],
                                                          [get_theorems_in_group(embeddings, data.cluster_labels, j, max_size=params.max_sample_size)
                                                           for j in neighbors_without_neighbor], [primary_focuses_msgs_last[j][i] for j in neighbors_without_neighbor], llm=llm)
 
@@ -253,7 +260,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
         for neighbor_ind in range(params.cluster_cluster_deg):
             neighbors_without_neighbor = np.delete(neighbors, neighbor_ind)
 
-            ret = await local_neighbor_with_descr_labels(get_theorems_in_group(embeddings, data.cluster_labels, i, max_size=params.max_sample_size), primary_focuses_msgs_last[i],
+            ret = await local_neighbor_with_descr_labels(get_theorems_in_group(embeddings, data.cluster_labels, i, max_size=params.max_sample_size), primary_focuses_msgs_last[i][neighbor_ind],
                                                          [get_theorems_in_group(embeddings, data.cluster_labels, j, max_size=params.max_sample_size)
                                                           for j in neighbors_without_neighbor], [primary_focuses_msgs_last[j][i] for j in neighbors_without_neighbor], llm=llm)
             p[neighbors[neighbor_ind]] = ret
@@ -261,7 +268,7 @@ async def llm_bp(embeddings: custom_types.Embeddings, llm: LLM, data: RunData):
 
     for round_numb in range(data.completed_rounds, params.n_rounds):
         print(f"Starting BP Round {round_numb + 1} out of {params.n_rounds}")
-        SKIP = 1
+        SKIP = 5
         tmp = []
         for i in range(0, params.n_clusters, SKIP):
             tasks = []
@@ -335,7 +342,6 @@ async def run_bp_labeling(n_clusters: int, params: RunParams, thm_embs: custom_t
     data = RunData(cluster_labels=labels, parity_check_matrix=H, params=params)
     await llm_bp(thm_embs, llm, data)
 
-
 async def run_from_file(thm_embs: custom_types.Embeddings, file_path: str, llm: LLM, n_rounds=None):
     """
       Runs BP on the given theorems, returning the labels for each theorem
@@ -355,22 +361,18 @@ if __name__ == "__main__":
     file_path = f"data_store/embeddings_seed_69420_size_10000.json"
     embeddings: List[Tuple[str, List[float]]] = json.load(open(file_path, "r"))
     # thm_embs =
-    n_clusters = 24
-    bp_rounds = 2
-    params = RunParams(n_clusters=n_clusters, seed=69_420, n_rounds=bp_rounds,
-                       model_name="exlamma-luban-13b-4bit" if not USE_FAKE else "FAKE", max_sample_size=20, cluster_cluster_deg=3)
-    if USE_FAKE:
-        llm = fake.FakeListLLM(responses=["hello " * 30] * 1_000)
-    else:
-        llm = exllama_lang.ExLLamaLLM(model_dir="../../Luban-13B-GPTQ", max_response_tokens=1_000,
-                                      max_seq_len=4_096, temperature=0.3, beams=3, beam_length=10)
+    # TODO: CHANGE
+    n_clusters = 30
+    bp_rounds = 3
+    params = RunParams(n_clusters=n_clusters, seed=42_42_43, n_rounds=bp_rounds,
+                       model_name=llm_name, max_sample_size=20, cluster_cluster_deg=3)
     if False:
-        loop.run_until_complete(run_bp_labeling(24, embeddings, llm))
-    elif False:
+        loop.run_until_complete(run_bp_labeling(n_clusters, params, embeddings, llm))
+    elif True:
         new_n_rounds = 5
         loop.run_until_complete(run_from_file(
             embeddings, get_data_file_name(params), llm, n_rounds=new_n_rounds))
-    elif True:
+    elif False:
         _data = json.load(open(get_data_file_name(params), "r"))
         data = RunData.from_dict(_data)
         for i in range(5):
